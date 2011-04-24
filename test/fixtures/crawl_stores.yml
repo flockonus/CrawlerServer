@@ -1,0 +1,9 @@
+one:
+  destiny: MyString
+  content: MyText
+  transmited: false
+
+two:
+  destiny: MyString
+  content: MyText
+  transmited: false

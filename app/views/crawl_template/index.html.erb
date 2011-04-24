@@ -1,0 +1,22 @@
+<% title "Crawled from: #{@destiny_cod}" %>
+
+<table>
+  <tr>
+    <!--th>Destiny</th -->
+	<th>When</th>
+    <th>Content</th>
+    <th>Transmited</th>
+  </tr>
+  <% for crawl_store in @crawl_stores %>
+    <tr>
+      <!--td><%=h crawl_store.destiny %></td-->
+	  <td><%=h crawl_store.created_at %></td>
+      <td><%=h crawl_store.content[0..12] %></td>
+      <td><%=h crawl_store.transmited ? 'yes' : 'no' %></td>
+      <td><%= link_to "Show", "#" %></td>
+      <td><%= link_to "Edit", "#" %></td>
+      <td><%= link_to "Destroy", "#", :confirm => 'Are you sure?', :method => :delete %></td>
+    </tr>
+  <% end %>
+</table>
+

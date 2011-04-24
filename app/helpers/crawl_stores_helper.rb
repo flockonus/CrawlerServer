@@ -1,0 +1,2 @@
+module CrawlStoresHelper
+end

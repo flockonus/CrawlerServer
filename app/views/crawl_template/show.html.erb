@@ -1,0 +1,20 @@
+<% title "Crawl Store" %>
+
+<p>
+  <strong>Destiny:</strong>
+  <%=h @crawl_store.destiny %>
+</p>
+<p>
+  <strong>Content:</strong>
+  <%=h @crawl_store.content %>
+</p>
+<p>
+  <strong>Transmited:</strong>
+  <%=h @crawl_store.transmited %>
+</p>
+
+<p>
+  <%= link_to "Edit", edit_crawl_store_path(@crawl_store) %> |
+  <%= link_to "Destroy", @crawl_store, :confirm => 'Are you sure?', :method => :delete %> |
+  <%= link_to "View All", crawl_stores_path %>
+</p>

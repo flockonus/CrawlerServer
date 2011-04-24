@@ -1,0 +1,14 @@
+http://armorgames.com/category/action
+
+http://www.thegameslist.com/games/genre/Sports/games
+
+
+http://www.gamestop.com/browse/search.aspx?dsNav=Ns:inventory.PreorderAvailabilityDate|101|-1|,N:138
+  -> P/ cada console: Menu do topo|Menu dropdown, ->see all upcoming, crawl as páginas até achar algo que jah exista no BD
+    -> Xbox360: http://developer.yahoo.com/yql/console/#h=select%20*%20from%20html%20where%20url%3D%27http%3A//www.gamestop.com/browse/search.aspx%3FdsNav%3DNs%3Ainventory.PreorderAvailabilityDate%257C101%257C-1%257C%2CN%3A133%27%20and%20xpath%3D%27//div%5B@class%3D%22product%20new_product%22%5D%27
+    -> ...
+
+http://developer.yahoo.com/ruby/ruby-json.html
+http://developer.yahoo.com/yql/guide/yql-select-xpath.html
+
+http://en.wikipedia.org/wiki/List_of_best-selling_video_games

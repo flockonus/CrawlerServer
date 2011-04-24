@@ -1,0 +1,16 @@
+<% form_for @crawl_store do |f| %>
+  <%= f.error_messages %>
+  <p>
+    <%= f.label :destiny %><br />
+    <%= f.text_field :destiny %>
+  </p>
+  <p>
+    <%= f.label :content %><br />
+    <%= f.text_area :content %>
+  </p>
+  <p>
+    <%= f.label :transmited %><br />
+    <%= f.check_box :transmited %>
+  </p>
+  <p><%= f.submit %></p>
+<% end %>
