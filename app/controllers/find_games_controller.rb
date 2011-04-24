@@ -15,15 +15,81 @@ class FindGamesController < CrawlTemplateController
   end
   
   def fetch_data
-    agent = Mechanize.new
+    @agent = Mechanize.new
     # this is the sorted by Oldest titles.
-    url_xbox = 'http://www.gamestop.com/browse/search.aspx?dsNav=Ns:inventory.PreorderAvailabilityDate|101|-1|,N:138'
-    page = agent.get( url_xbox )
+    url_xbox = 'http://www.gamestop.com/browse/xbox-360?nav=28rp0,1385'
     
-    ".product.new_product"
+    @page = page_fetch( url_xbox )
     
-    render :text => "Bla Bla Bla"
+    return fail_response unless @page
+    
+    return fail_response unless test_page_crumb( @page, :xbox360 )
+    
+    itens = []
+    
+    @page.search( '.product.new_product' ).each do |div| 
+      item = {
+        'nome' => div.search('h3>a').text
+      }
+      
+      puts ">>  GOT #{item.inspect}"
+    end
+    
+    
+    
+    
+    
+    
+    render :text => "[WIN]"
   end
+  
+  
+  
+  
+  def page_fetch( url_str )
+    page = ( @agent.get( url_str ) rescue nil )
+    
+    if page
+      puts ">>  OK Page Fetch"
+    else
+      puts ">>  FAIL Page Fetch"
+    end
+    
+    page
+  end
+  
+  def test_page_crumb( page, target )
+    target = case( target )
+      when :xbox360 then /Xbox.*360/i
+      # add more ..
+      else raise("ARGUMENT target is unknown")
+    end
+    
+    if page && page.search( '.results_header.grid_20.alpha' ).inner_text =~ target
+      puts ">>  OK XBOX String - match"
+      return true
+    else
+      puts ">>  FAIL XBOX String - match"
+      return false
+    end
+  end
+  
+  def fail_response
+    render :text => ['FAIL']
+  end
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   
   def crawl
     # Suspecting of multiple calls, but probably not #Rails.cache.increment 'req_count'
