@@ -6,7 +6,8 @@
 
 * Verificar MD5 antes de persistir
 * Ir para proxima página e salva-la
+* Fazer contagem de dados novos e repetidos
 * Refatorar o código de extracao pra um local mais apropiado
-* Expandir para demais plataformas
+* Expandir para demais consoles
 * ???
 * PROFIT
