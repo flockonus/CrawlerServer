@@ -17,7 +17,10 @@ class FindGamesController < CrawlTemplateController
   def fetch_data
     @agent = Mechanize.new
     # this is the sorted by Oldest titles.
-    url_xbox = 'http://www.gamestop.com/browse/xbox-360?nav=28rp0,1385'
+    # url_xbox = 'http://www.gamestop.com/browse/xbox-360?nav=28rp0,1385'
+    
+    # Only Games sorted by oldest first
+    url_xbox = 'http://www.gamestop.com/browse/xbox-360/games?nav=2b0,28rp0,1385-177' # http://www.gamestop.com/browse/xbox-360/games?nav=2b1344,28rp0,1385-177
     
     @page = page_fetch( url_xbox )
     
@@ -27,23 +30,49 @@ class FindGamesController < CrawlTemplateController
     
     itens = []
     
-    @page.search( '.product.new_product' ).each do |div| 
-      item = {
-        'nome' => div.search('h3>a').text
-      }
+    @page.search( '.product' ).each do |div| # '.product.new_product'
       
-      puts ">>  GOT #{item.inspect}"
+      status = div.search('.purchase_info > h4').text # 'BUY NEW' | 'BUY PRE-OWNED' | 'BUY DIGITAL'
+      
+      next unless assert_product_status( status )
+      
+      itens.push << extract_game_data( div )
+      
+      
     end
-    
-    
-    
-    
     
     
     render :text => "[WIN]"
   end
   
+  def assert_product_status( str )
+    # only parse if NEW | DIGITAL --don't want pre-owned repetition
+    
+    str =~ /new/i or str =~ /digital/i
+  end
   
+  def extract_game_data( div )
+    item = nil
+    
+    begin
+      item = {
+        'name' => div.search('h3>a').text,
+        'by' => div.search('.publisher').text.split(' ')[-1],
+        'default_rate' => div.search('.rating > strong > em').text.to_f,
+        'img_source' => div.search('.product_art').attribute('src').value,
+        'price_now' => div.search('.pricing').text.sub(/\$/, '').to_f,
+        'their_url' => div.search('h3>a').attribute('href').text,
+        'digital' => ( div.search('.purchase_info > h4').text =~ /digital/i ) ? true : false
+      }
+    rescue 
+      puts ">>  FAIL extract_game_data()"
+    end
+    
+    puts ">>  GOT #{item.inspect}"
+    
+    item
+    
+  end
   
   
   def page_fetch( url_str )
