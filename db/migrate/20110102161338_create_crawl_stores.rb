@@ -3,7 +3,9 @@ class CreateCrawlStores < ActiveRecord::Migration
     create_table :crawl_stores do |t|
       t.string :destiny
       t.text :content
-      t.boolean :transmited
+      t.boolean :transmited, :default => false
+      t.string :md5, :limit => 32
+      
       t.timestamps
     end
   end

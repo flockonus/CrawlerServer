@@ -14,7 +14,8 @@ ActiveRecord::Schema.define(:version => 20110102161338) do
   create_table "crawl_stores", :force => true do |t|
     t.string   "destiny"
     t.text     "content"
-    t.boolean  "transmited"
+    t.boolean  "transmited",               :default => false
+    t.string   "md5",        :limit => 32
     t.datetime "created_at"
     t.datetime "updated_at"
   end

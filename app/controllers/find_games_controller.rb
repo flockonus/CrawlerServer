@@ -1,4 +1,5 @@
 class FindGamesController < CrawlTemplateController
+  
 
   before_filter :define_instance_variables
   def define_instance_variables
@@ -15,6 +16,8 @@ class FindGamesController < CrawlTemplateController
   end
   
   def fetch_data
+    t1 = Time.now
+    puts ">> START #{@destiny_cod} #{t1}"
     @agent = Mechanize.new
     # this is the sorted by Oldest titles.
     # url_xbox = 'http://www.gamestop.com/browse/xbox-360?nav=28rp0,1385'
@@ -30,6 +33,7 @@ class FindGamesController < CrawlTemplateController
     
     itens = []
     
+    # Crawl the whole page
     @page.search( '.product' ).each do |div| # '.product.new_product'
       
       status = div.search('.purchase_info > h4').text # 'BUY NEW' | 'BUY PRE-OWNED' | 'BUY DIGITAL'
@@ -38,12 +42,40 @@ class FindGamesController < CrawlTemplateController
       
       itens.push << extract_game_data( div )
       
+    end
+    
+    # Persist the valid info
+    valid_count = 0
+    itens.each do |item|
+      
+      next unless item
+        
+      c = CrawlStore.new({
+        :destiny    => @destiny_cod,
+        :content    => item.to_yaml
+      })
+      
+      if c.save
+        valid_count += 1
+        puts ">>  SAVED #{ c.id }"
+      else
+        puts ">>  FAILED #{ c.errors.inspect }"
+      end
+      
       
     end
     
     
+    puts ">> WIN #{Time.now - t1}s"
+    puts ""
     render :text => "[WIN]"
   end
+  
+  
+  
+  
+  
+  
   
   def assert_product_status( str )
     # only parse if NEW | DIGITAL --don't want pre-owned repetition
@@ -56,15 +88,15 @@ class FindGamesController < CrawlTemplateController
     
     begin
       item = {
-        'name' => div.search('h3>a').text,
-        'by' => div.search('.publisher').text.split(' ')[-1],
+        'name' => div.search('h3>a').text.strip,
+        'by' => div.search('.publisher').text.strip.split(' ')[-1],
         'default_rate' => div.search('.rating > strong > em').text.to_f,
         'img_source' => div.search('.product_art').attribute('src').value,
-        'price_now' => div.search('.pricing').text.sub(/\$/, '').to_f,
+        'price_now' => div.search('.pricing').text.strip.sub(/\$/, '').to_f,
         'their_url' => div.search('h3>a').attribute('href').text,
         'digital' => ( div.search('.purchase_info > h4').text =~ /digital/i ) ? true : false
       }
-    rescue 
+    rescue
       puts ">>  FAIL extract_game_data()"
     end
     

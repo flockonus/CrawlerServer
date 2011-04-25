@@ -8,6 +8,7 @@ config/s3_credentials.yml
 tmp/**/*
 .DS_Store
 db/cstore/**
+db/schema.rb
 db/sphinx/**
 db/*.sqlite3
 *.tmproj

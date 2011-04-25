@@ -1,3 +1,15 @@
 class CrawlStore < ActiveRecord::Base
-  attr_accessible :destiny, :content, :transmited
+  require 'md5'
+  
+  validates_presence_of :content
+  
+  before_validation :generate_md5
+  
+  def generate_md5
+    # update/create the attrib md5 when we got new content
+    if changes['content']
+      self.md5 = MD5.hexdigest( content )
+    end
+  end
+  
 end

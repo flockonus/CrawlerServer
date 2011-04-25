@@ -1,1 +1,12 @@
-Crawler & data keeper
+== Crawler & data keeper
+
+.
+
+== TODO
+
+* Verificar MD5 antes de persistir
+* Ir para proxima página e salva-la
+* Refatorar o código de extracao pra um local mais apropiado
+* Expandir para demais plataformas
+* ???
+* PROFIT
