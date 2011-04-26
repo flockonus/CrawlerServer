@@ -33,7 +33,8 @@ class FindGamesController < CrawlTemplateController
     
     itens = []
     
-    # Crawl the whole page
+=begin   
+    # ✓ Crawl the whole page
     @page.search( '.product' ).each do |div| # '.product.new_product'
       
       status = div.search('.purchase_info > h4').text # 'BUY NEW' | 'BUY PRE-OWNED' | 'BUY DIGITAL'
@@ -43,6 +44,9 @@ class FindGamesController < CrawlTemplateController
       itens.push << extract_game_data( div )
       
     end
+=end
+    
+    
     
     # Persist the valid info
     valid_count = 0
@@ -66,6 +70,28 @@ class FindGamesController < CrawlTemplateController
     end
     
     
+    
+
+    # Busca pelo link de 'Next'
+    @next_link = fetch_next_page_link( @page )
+    
+    # give a small time b4 continues
+    sleep 3
+    
+    return fail_response unless @next_link
+    
+    
+    # # # # # # # # # # # REPEATS THE CICLE...
+    
+    @page = page_fetch( @next_link )
+    
+    return fail_response unless @page
+    
+    return fail_response unless test_page_crumb( @page, :xbox360 )
+    
+    # # # # # # # # # # # /REPEATS THE CICLE...
+    
+    
     puts ">> WIN #{Time.now - t1}s"
     puts ""
     render :text => "[WIN]"
@@ -74,7 +100,17 @@ class FindGamesController < CrawlTemplateController
   
   
   
-  
+  def fetch_next_page_link page
+    next_link = nil
+    page.search('.result_pagination')[0].children.search('a').each do |link| 
+      begin 
+        next_link = link[:href] if link.text =~ /next/i
+      rescue
+        puts('>>  FAIL fetch_next_page_link()')
+      end
+    end
+    next_link
+  end
   
   
   def assert_product_status( str )
@@ -111,9 +147,9 @@ class FindGamesController < CrawlTemplateController
     page = ( @agent.get( url_str ) rescue nil )
     
     if page
-      puts ">>  OK Page Fetch"
+      puts ">>  OK Page Fetch: #{url_str}"
     else
-      puts ">>  FAIL Page Fetch"
+      puts ">>  FAIL Page Fetch: #{url_str}"
     end
     
     page
