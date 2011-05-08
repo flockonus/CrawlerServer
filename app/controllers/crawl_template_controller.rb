@@ -15,7 +15,10 @@ class CrawlTemplateController < ApplicationController
     "wave hello at destiny"
   end
   
-  
+  def show
+    @reg = CrawlStore.find( params[:id] )
+    render 'crawl_template/show'
+  end
   
   
   protected

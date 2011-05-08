@@ -2,19 +2,19 @@
 
 <p>
   <strong>Destiny:</strong>
-  <%=h @crawl_store.destiny %>
+  <%=h @reg.destiny %>
 </p>
 <p>
-  <strong>Content:</strong>
-  <%=h @crawl_store.content %>
+  <strong>Content:</strong><br>
+<pre><%=h @reg.content %></pre>
 </p>
 <p>
   <strong>Transmited:</strong>
-  <%=h @crawl_store.transmited %>
+  <%=h @reg.transmited %>
 </p>
 
 <p>
-  <%= link_to "Edit", edit_crawl_store_path(@crawl_store) %> |
-  <%= link_to "Destroy", @crawl_store, :confirm => 'Are you sure?', :method => :delete %> |
-  <%= link_to "View All", crawl_stores_path %>
+  <%#= link_to "Edit", edit_crawl_store_path(@crawl_store) %> |
+  <%#= link_to "Destroy", @crawl_store, :confirm => 'Are you sure?', :method => :delete %> |
+  <%= link_to "View All", "/#{@destiny_cod}" %>
 </p>

@@ -1,11 +1,15 @@
 class FindGamesController < CrawlTemplateController
-  
 
   before_filter :define_instance_variables
   def define_instance_variables
     @salt = "Gwen1aTere22a@1" # this MUST be different for each destiny!
     @destiny_cod = "find_games"
     @destiny_url = "127.0.0.1:3000/receiver_example" # must be other Server! Running on the same will block
+  end
+  
+  def puts msg
+    logger.info { msg }
+    Kernel.puts msg
   end
   
   def index
@@ -23,19 +27,16 @@ class FindGamesController < CrawlTemplateController
     
     consoles = ActiveSupport::OrderedHash.new()
     consoles['xbox360'] =       'http://www.gamestop.com/browse/xbox-360/games?nav=2b0,28rp0,1385-177'
-    consoles['ps3'] =           'http://www.gamestop.com/browse/playstation-3/games?nav=28rp0,138d-177'
-    consoles['wii'] =           'http://www.gamestop.com/browse/nintendo-wii/games?nav=28rp0,138a-177'
-    consoles['3ds'] =           'http://www.gamestop.com/browse/games/nintendo-3ds?nav=28rp0,131a2-177'
-    consoles['ds'] =            'http://www.gamestop.com/browse/games/nintendo-ds?nav=28rp0,1386-177'
-    consoles['psp'] =           'http://www.gamestop.com/browse/sony-psp/games?nav=2b0,28rp0,1388-177'
-    consoles['pc'] =           'http://www.gamestop.com/browse/pc/games?nav=28rp0,138c-177'    
+    #consoles['ps3'] =           'http://www.gamestop.com/browse/playstation-3/games?nav=28rp0,138d-177'
+    #consoles['wii'] =           'http://www.gamestop.com/browse/nintendo-wii/games?nav=28rp0,138a-177'
+    #consoles['3ds'] =           'http://www.gamestop.com/browse/games/nintendo-3ds?nav=28rp0,131a2-177'
+    #consoles['ds'] =            'http://www.gamestop.com/browse/games/nintendo-ds?nav=28rp0,1386-177'
+    #consoles['psp'] =           'http://www.gamestop.com/browse/sony-psp/games?nav=2b0,28rp0,1388-177'
+    #consoles['pc'] =            'http://www.gamestop.com/browse/pc/games?nav=28rp0,138c-177'    
     
     consoles.each do |k,v|
       fetch_data_for( k, v )
 
-# DEBUG
-puts "sleeping testing..... "
-sleep 10 + rand(10)
     end
     
     puts ">> WIN global #{Time.now - t1}s"
@@ -43,6 +44,9 @@ sleep 10 + rand(10)
     render :text => "[WIN]"
     
   end
+  
+  
+  
   
   def fetch_data_for( platform=nil, url=nil )
     
@@ -56,24 +60,18 @@ sleep 10 + rand(10)
       return fail_response
     end
     
-    #t1 = Time.now
-    #puts ">> START #{@destiny_cod} #{t1}"
-    
-    
-    
     
     if @agent = Mechanize.new
+      @agent.user_agent_alias = "Linux Firefox"
       puts ">> INIT platform: #{platform}"
     end
     
     i = 0
     valid_count = 0
     
-    while( url ){
+    while( url ) do
       
-#DEBUG
-break
-      
+      i += 1
       puts ">>  PAGE #{i}"
       # try and fetch page
       @page = page_fetch( url )
@@ -83,6 +81,10 @@ break
       # assert if the page name fetched was the expected
       return fail_response unless test_page_crumb( @page, platform )
       
+#DEBUG
+#puts "DEBUG done here"
+#break
+
       itens = []
       
       # ✓ Crawl the whole page
@@ -90,7 +92,7 @@ break
         
         next unless assert_product_status( div )
         
-        itens.push << extract_game_data( div )
+        itens.push << extract_game_data( div, platform )
         
       end
       
@@ -130,9 +132,9 @@ break
       #  puts ">>  FINISHED #{platform}, #{i}+1 pages"
       #end
       
-    }
+    end
     
-    puts ">>  FINISHED #{platform}, #{i}+1 pages, #{valid_count} valid scrapes"
+    puts ">>  FINISHED #{platform}, #{i} pages, #{valid_count} valid scrapes"
     
   end
   
@@ -214,7 +216,14 @@ break
   
   def test_page_crumb( page, target )
     target = case( target )
-      when :xbox360 then /Xbox.*360/i
+      when 'xbox360' then /Xbox.*360/i
+      when 'ps3'     then  /PlayStation/i
+      when 'wii'     then  /Wii/i
+      when '3ds'     then  /3DS/i
+      when 'ds'      then  /Nintendo.*DS/i
+      when 'psp'     then  /Sony.*PSP/i
+      when 'pc'      then  /PC/i
+      
       # add more ..
       else raise("ARGUMENT target is unknown")
     end
