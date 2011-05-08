@@ -15,86 +15,125 @@ class FindGamesController < CrawlTemplateController
     #Rails.cache.write 'req_count', 0
   end
   
-  def fetch_data
+  def mega_initial_fetch
     t1 = Time.now
-    puts ">> START #{@destiny_cod} #{t1}"
-    @agent = Mechanize.new
-    # this is the sorted by Oldest titles.
-    # url_xbox = 'http://www.gamestop.com/browse/xbox-360?nav=28rp0,1385'
+    puts ">> START mega_initial_tech() for #{@destiny_cod} #{t1}"
     
-    # Only Games sorted by oldest first
-    url_xbox = 'http://www.gamestop.com/browse/xbox-360/games?nav=2b0,28rp0,1385-177' # http://www.gamestop.com/browse/xbox-360/games?nav=2b1344,28rp0,1385-177
     
-    @page = page_fetch( url_xbox )
     
-    return fail_response unless @page
+    consoles = ActiveSupport::OrderedHash.new()
+    consoles['xbox360'] =       'http://www.gamestop.com/browse/xbox-360/games?nav=2b0,28rp0,1385-177'
+    consoles['ps3'] =           'http://www.gamestop.com/browse/playstation-3/games?nav=28rp0,138d-177'
+    consoles['wii'] =           'http://www.gamestop.com/browse/nintendo-wii/games?nav=28rp0,138a-177'
+    consoles['3ds'] =           'http://www.gamestop.com/browse/games/nintendo-3ds?nav=28rp0,131a2-177'
+    consoles['ds'] =            'http://www.gamestop.com/browse/games/nintendo-ds?nav=28rp0,1386-177'
+    consoles['psp'] =           'http://www.gamestop.com/browse/sony-psp/games?nav=2b0,28rp0,1388-177'
+    consoles['pc'] =           'http://www.gamestop.com/browse/pc/games?nav=28rp0,138c-177'    
     
-    return fail_response unless test_page_crumb( @page, :xbox360 )
-    
-    itens = []
-    
-=begin   
-    # ✓ Crawl the whole page
-    @page.search( '.product' ).each do |div| # '.product.new_product'
-      
-      status = div.search('.purchase_info > h4').text # 'BUY NEW' | 'BUY PRE-OWNED' | 'BUY DIGITAL'
-      
-      next unless assert_product_status( status )
-      
-      itens.push << extract_game_data( div )
-      
+    consoles.each do |k,v|
+      fetch_data_for( k, v )
+
+# DEBUG
+puts "sleeping testing..... "
+sleep 10 + rand(10)
     end
-=end
+    
+    puts ">> WIN global #{Time.now - t1}s"
+    puts ""
+    render :text => "[WIN]"
+    
+  end
+  
+  def fetch_data_for( platform=nil, url=nil )
+    
+    if !platform || !platform.is_a?(String)
+      puts ">>  FATAL param missing :platform"
+      return fail_response
+    end
+    
+    if !url || !url.is_a?(String)
+      puts ">>  FATAL param missing :url"
+      return fail_response
+    end
+    
+    #t1 = Time.now
+    #puts ">> START #{@destiny_cod} #{t1}"
     
     
     
-    # Persist the valid info
+    
+    if @agent = Mechanize.new
+      puts ">> INIT platform: #{platform}"
+    end
+    
+    i = 0
     valid_count = 0
-    itens.each do |item|
+    
+    while( url ){
       
-      next unless item
+#DEBUG
+break
+      
+      puts ">>  PAGE #{i}"
+      # try and fetch page
+      @page = page_fetch( url )
+      
+      return fail_response unless @page
+      
+      # assert if the page name fetched was the expected
+      return fail_response unless test_page_crumb( @page, platform )
+      
+      itens = []
+      
+      # ✓ Crawl the whole page
+      @page.search( '.product' ).each do |div| # '.product.new_product'
         
-      c = CrawlStore.new({
-        :destiny    => @destiny_cod,
-        :content    => item.to_yaml
-      })
+        next unless assert_product_status( div )
+        
+        itens.push << extract_game_data( div )
+        
+      end
       
-      if c.save
-        valid_count += 1
-        puts ">>  SAVED #{ c.id }"
-      else
-        puts ">>  FAILED #{ c.errors.inspect }"
+      # Persist the valid info
+      #valid_count = 0
+      itens.each do |item|
+        
+        next unless item
+          
+        c = CrawlStore.new({
+          :destiny    => @destiny_cod,
+          :content    => item.to_yaml
+        })
+        
+        if c.save
+          valid_count += 1
+          puts ">>  SAVED #{ c.id }"
+        else
+          puts ">>  FAILED #{ c.errors.inspect }"
+        end
+        
       end
       
       
-    end
+      # Busca pelo link de 'Next'
+      #@next_link = fetch_next_page_link( @page )
+      last_url = url+""
+      url = fetch_next_page_link( @page )
+      
+      # give a small time b4 continues
+      zzz = 9 + rand(5) + rand(5) + rand()
+      puts ">>  SLEEPING #{zzz}s "
+      sleep zzz
+      
+      #return fail_response unless @next_link
+      #unless url
+      #  puts ">>  FINISHED #{platform}, #{i}+1 pages"
+      #end
+      
+    }
     
+    puts ">>  FINISHED #{platform}, #{i}+1 pages, #{valid_count} valid scrapes"
     
-    
-
-    # Busca pelo link de 'Next'
-    @next_link = fetch_next_page_link( @page )
-    
-    # give a small time b4 continues
-    sleep 3
-    
-    return fail_response unless @next_link
-    
-    
-    # # # # # # # # # # # REPEATS THE CICLE...
-    
-    @page = page_fetch( @next_link )
-    
-    return fail_response unless @page
-    
-    return fail_response unless test_page_crumb( @page, :xbox360 )
-    
-    # # # # # # # # # # # /REPEATS THE CICLE...
-    
-    
-    puts ">> WIN #{Time.now - t1}s"
-    puts ""
-    render :text => "[WIN]"
   end
   
   
@@ -106,31 +145,49 @@ class FindGamesController < CrawlTemplateController
       begin 
         next_link = link[:href] if link.text =~ /next/i
       rescue
-        puts('>>  FAIL fetch_next_page_link()')
+        #puts('>>  FAIL fetch_next_page_link()')
+        1
       end
     end
     next_link
   end
   
   
-  def assert_product_status( str )
-    # only parse if NEW | DIGITAL --don't want pre-owned repetition
+  def assert_product_status( div )
     
-    str =~ /new/i or str =~ /digital/i
+    valid = true
+    
+    # only parse if NEW | DIGITAL --don't want PRE-OWNED repetition
+    condition = div.search('.purchase_info > h4').text
+    if !(condition =~ /new/i) and !(condition =~ /digital/i)
+      valid = false
+      puts ">>  SKIP don't want #{condition}"
+    end
+    
+    # Also don't 
+    if valid && div.search('.product_info > ul').text() =~ /Release Date/i
+      valid = false
+      puts ">>  SKIP unreleased game"
+    end
+    
+    valid
   end
   
-  def extract_game_data( div )
+  def extract_game_data( div, platform )
     item = nil
     
     begin
+      # Soft attributes set here.
       item = {
         'name' => div.search('h3>a').text.strip,
-        'by' => div.search('.publisher').text.strip.split(' ')[-1],
+        'by' => div.search('.publisher').text.match(/by (.*)/)[1].strip,
+        'platform' => platform,
         'default_rate' => div.search('.rating > strong > em').text.to_f,
         'img_source' => div.search('.product_art').attribute('src').value,
         'price_now' => div.search('.pricing').text.strip.sub(/\$/, '').to_f,
         'their_url' => div.search('h3>a').attribute('href').text,
-        'digital' => ( div.search('.purchase_info > h4').text =~ /digital/i ) ? true : false
+        'esrb' => div.search('div.product_info img').attribute('src').text.match( /.*search_(.*)\./)[1],
+        'digital' => ( div.search('.purchase_info > h4').text =~ /digital/i ) ? true : false,
       }
     rescue
       puts ">>  FAIL extract_game_data()"
@@ -172,7 +229,8 @@ class FindGamesController < CrawlTemplateController
   end
   
   def fail_response
-    render :text => ['FAIL']
+    #render :text => ['FAIL']
+    raise("CRAWLER BOOMMMMMMMMMM !!!!!!!!!!!!")
   end
   
   
