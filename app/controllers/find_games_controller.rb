@@ -26,8 +26,8 @@ class FindGamesController < CrawlTemplateController
     
     
     consoles = ActiveSupport::OrderedHash.new()
-    consoles['xbox360'] =       'http://www.gamestop.com/browse/xbox-360/games?nav=2b0,28rp0,1385-177'
-    #consoles['ps3'] =           'http://www.gamestop.com/browse/playstation-3/games?nav=28rp0,138d-177'
+    #consoles['xbox360'] =       'http://www.gamestop.com/browse/xbox-360/games?nav=2b0,28rp0,1385-177'
+    consoles['ps3'] =           'http://www.gamestop.com/browse/playstation-3/games?nav=28rp0,138d-177'
     #consoles['wii'] =           'http://www.gamestop.com/browse/nintendo-wii/games?nav=28rp0,138a-177'
     #consoles['3ds'] =           'http://www.gamestop.com/browse/games/nintendo-3ds?nav=28rp0,131a2-177'
     #consoles['ds'] =            'http://www.gamestop.com/browse/games/nintendo-ds?nav=28rp0,1386-177'
@@ -36,7 +36,7 @@ class FindGamesController < CrawlTemplateController
     
     consoles.each do |k,v|
       fetch_data_for( k, v )
-
+      
     end
     
     puts ">> WIN global #{Time.now - t1}s"
