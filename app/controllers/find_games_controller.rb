@@ -23,25 +23,25 @@ class FindGamesController < CrawlTemplateController
     t1 = Time.now
     puts ">> START mega_initial_tech() for #{@destiny_cod} #{t1}"
     
-    
-    
-    consoles = ActiveSupport::OrderedHash.new()
-    #consoles['xbox360'] =       'http://www.gamestop.com/browse/xbox-360/games?nav=2b0,28rp0,1385-177'
-    consoles['ps3'] =           'http://www.gamestop.com/browse/playstation-3/games?nav=28rp0,138d-177'
-    #consoles['wii'] =           'http://www.gamestop.com/browse/nintendo-wii/games?nav=28rp0,138a-177'
-    #consoles['3ds'] =           'http://www.gamestop.com/browse/games/nintendo-3ds?nav=28rp0,131a2-177'
-    #consoles['ds'] =            'http://www.gamestop.com/browse/games/nintendo-ds?nav=28rp0,1386-177'
-    #consoles['psp'] =           'http://www.gamestop.com/browse/sony-psp/games?nav=2b0,28rp0,1388-177'
-    #consoles['pc'] =            'http://www.gamestop.com/browse/pc/games?nav=28rp0,138c-177'    
-    
-    consoles.each do |k,v|
-      fetch_data_for( k, v )
-      
+    # caso venha por parametro o nome da plataform, roda só ela.
+    if params[:id] && params[:id] != 'all'
+      if @consoles[ params[:id] ]
+        fetch_data_for( params[:id], @consoles[ params[:id] ] )
+      else
+        return render :text => "['FAIL', 'bad use of param on request']"
+      end
+    else
+      # caso não venha params[:id] ou seja 'all', roda todas, uma a uma
+      @consoles.each do |k,v|
+        fetch_data_for( k, v )
+      end
     end
+    
+    
     
     puts ">> WIN global #{Time.now - t1}s"
     puts ""
-    render :text => "[WIN]"
+    render :text => "['WIN']"
     
   end
   
@@ -324,6 +324,17 @@ class FindGamesController < CrawlTemplateController
   end
   
   protected
+  
+  def console_list
+    @consoles = ActiveSupport::OrderedHash.new()
+    @consoles['xbox360'] =       'http://www.gamestop.com/browse/xbox-360/games?nav=2b0,28rp0,1385-177'
+    @consoles['ps3'] =           'http://www.gamestop.com/browse/playstation-3/games?nav=28rp0,138d-177'
+    @consoles['wii'] =           'http://www.gamestop.com/browse/nintendo-wii/games?nav=28rp0,138a-177'
+    @consoles['3ds'] =           'http://www.gamestop.com/browse/games/nintendo-3ds?nav=28rp0,131a2-177'
+    @consoles['ds'] =            'http://www.gamestop.com/browse/games/nintendo-ds?nav=28rp0,1386-177'
+    @consoles['psp'] =           'http://www.gamestop.com/browse/sony-psp/games?nav=2b0,28rp0,1388-177'
+    @consoles['pc'] =            'http://www.gamestop.com/browse/pc/games?nav=28rp0,138c-177'
+  end
   
   def stream
     @datas = CrawlStore.all( :conditions => ["(transmited = ? or transmited is ?) and destiny = ?", false, nil, @destiny_cod] )

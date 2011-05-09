@@ -2,6 +2,7 @@ class CrawlStore < ActiveRecord::Base
   require 'md5'
   
   validates_presence_of :content
+  validates_uniqueness_of :md5
   
   before_validation :generate_md5
   
