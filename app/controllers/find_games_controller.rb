@@ -19,22 +19,32 @@ class FindGamesController < CrawlTemplateController
     #Rails.cache.write 'req_count', 0
   end
   
+  def concept_test
+    
+    # test pre-owned MD5 effective?
+    url = "http://www.gamestop.com/browse/nintendo-wii?nav=16k-Iron+Man,28-xp0,138a"
+    fetch_data_for( 'wii', url ) rescue nil
+    render :text => "See server output!"
+    
+  end
+  
+  
   def mega_initial_fetch
     t1 = Time.now
     puts ">> START mega_initial_tech() for #{@destiny_cod} #{t1}"
     
+    load_console_list()
+    
     # caso venha por parametro o nome da plataform, roda só ela.
-    if params[:id] && params[:id] != 'all'
-      if @consoles[ params[:id] ]
-        fetch_data_for( params[:id], @consoles[ params[:id] ] )
-      else
-        return render :text => "['FAIL', 'bad use of param on request']"
-      end
-    else
-      # caso não venha params[:id] ou seja 'all', roda todas, uma a uma
+    #if params[:id] && params[:id] != 'all'
+    if @consoles[ params[:id] ]
+      fetch_data_for( params[:id], @consoles[ params[:id] ] )
+    elsif params[:id] == 'all'
       @consoles.each do |k,v|
         fetch_data_for( k, v )
       end
+    else
+      return render :text => "['FAIL', 'bad use of param on request']"
     end
     
     
@@ -64,6 +74,8 @@ class FindGamesController < CrawlTemplateController
     if @agent = Mechanize.new
       @agent.user_agent_alias = "Linux Firefox"
       puts ">> INIT platform: #{platform}"
+    else
+      puts ">> INIT-FAIL platform: #{platform}"
     end
     
     i = 0
@@ -106,12 +118,15 @@ class FindGamesController < CrawlTemplateController
           :destiny    => @destiny_cod,
           :content    => item.to_yaml
         })
+
+        # dont wnat stuff like 'price' or 'rate' in the md5
+        c.custom_md5_id = (item['name'].to_s + item['by'].to_s + item['platform'].to_s rescue "" )
         
         if c.save
           valid_count += 1
           puts ">>  SAVED #{ c.id }"
         else
-          puts ">>  FAILED #{ c.errors.inspect }"
+          puts ">>  FAILED #{ c.errors.to_json }"
         end
         
       end
@@ -159,18 +174,26 @@ class FindGamesController < CrawlTemplateController
     
     valid = true
     
-    # only parse if NEW | DIGITAL --don't want PRE-OWNED repetition
+    # as from NOW, we may want PRE-OWNED too.. # only parse if NEW | DIGITAL --don't want PRE-OWNED repetition
     condition = div.search('.purchase_info > h4').text
-    if !(condition =~ /new/i) and !(condition =~ /digital/i)
+    if !(condition =~ /new/i) and !(condition =~ /digital/i) and !(condition =~ /pre-own/i)
       valid = false
       puts ">>  SKIP don't want #{condition}"
     end
     
-    # Also don't 
-    if valid && div.search('.product_info > ul').text() =~ /Release Date/i
+    # Also, don't get unreleased games!
+    prod_info = div.search('.product_info > ul').text()
+    if valid && ( prod_info =~ /Release Date/i || prod_info =~ /Pre-order/i )
       valid = false
       puts ">>  SKIP unreleased game"
     end
+    
+    # For PSP, we want no satisfaction Movie!
+    if valid && div.search('.product_info h3 strong').text =~ /UMD Mov/i
+      valid = false
+      puts ">>  SKIP psp movie"
+    end
+    
     
     valid
   end
@@ -191,11 +214,11 @@ class FindGamesController < CrawlTemplateController
         'esrb' => div.search('div.product_info img').attribute('src').text.match( /.*search_(.*)\./)[1],
         'digital' => ( div.search('.purchase_info > h4').text =~ /digital/i ) ? true : false,
       }
+      puts ">>  GOT #{item.inspect}"
     rescue
       puts ">>  FAIL extract_game_data()"
     end
     
-    puts ">>  GOT #{item.inspect}"
     
     item
     
@@ -325,7 +348,7 @@ class FindGamesController < CrawlTemplateController
   
   protected
   
-  def console_list
+  def load_console_list
     @consoles = ActiveSupport::OrderedHash.new()
     @consoles['xbox360'] =       'http://www.gamestop.com/browse/xbox-360/games?nav=2b0,28rp0,1385-177'
     @consoles['ps3'] =           'http://www.gamestop.com/browse/playstation-3/games?nav=28rp0,138d-177'
