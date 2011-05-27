@@ -12,7 +12,7 @@ class ReceiverExampleController < ApplicationController
     
     Rails.cache.write "crawl_test_for", test
     render :json => [test]
-    puts ">> KNOCK"
+    logger.info ">> KNOCK #{test}, #{form_authenticity_token}"
   end
   
   # check and store the verified ip as safe.
@@ -22,13 +22,14 @@ class ReceiverExampleController < ApplicationController
     
     if auth
       Rails.cache.write 'crawl_ack_ip', request.remote_ip
-      render :json => ['ok']
+      render :json => ['ok', form_authenticity_token]
     else
       #render 500 #:json => ['fail']
+      logger.info ">>>OPEN_THE_DOOR no"
       throw "fail"
     end
     
-    puts ">>>OPEN_THE_DOOR"
+    logger.info ">>>OPEN_THE_DOOR yes"
   end
   
   def receive_info
@@ -46,7 +47,13 @@ class ReceiverExampleController < ApplicationController
       throw "fail"
     end
     
-    puts ">>>RECEIVE_INFO"
+    logger.info ">>>RECEIVE_INFO"
+  end
+  
+  def test_post
+    if request.post?
+      render :json => ['ok']
+    end
   end
   
   protected

@@ -4,7 +4,10 @@ class FindGamesController < CrawlTemplateController
   def define_instance_variables
     @salt = "Gwen1aTere22a@1" # this MUST be different for each destiny!
     @destiny_cod = "find_games"
-    @destiny_url = "127.0.0.1:3000/receiver_example" # must be other Server! Running on the same will block
+    @base_url = "localhost" 
+    @port = 3001            # must be other server! Running on the same one will block
+    @url_path = '/receiver_example'
+    @sleep = 0.8
   end
   
   def puts msg
@@ -14,10 +17,12 @@ class FindGamesController < CrawlTemplateController
   
   def index
     super
-    
     #render :text => Rails.cache.read('req_count')
     #Rails.cache.write 'req_count', 0
   end
+  
+  
+  
   
   def concept_test
     
@@ -92,10 +97,7 @@ class FindGamesController < CrawlTemplateController
       
       # assert if the page name fetched was the expected
       return fail_response unless test_page_crumb( @page, platform )
-      
-#DEBUG
-#puts "DEBUG done here"
-#break
+
 
       itens = []
       
@@ -119,7 +121,7 @@ class FindGamesController < CrawlTemplateController
           :content    => item.to_yaml
         })
 
-        # dont wnat stuff like 'price' or 'rate' in the md5
+        # dont want stuff like 'price' or 'rate' in the md5
         c.custom_md5_id = (item['name'].to_s + item['by'].to_s + item['platform'].to_s rescue "" )
         
         if c.save
@@ -269,69 +271,6 @@ class FindGamesController < CrawlTemplateController
   
   
   
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  def crawl
-    # Suspecting of multiple calls, but probably not #Rails.cache.increment 'req_count'
-    # CONSOLE
-    # r = Net::HTTP.get_response URI.parse("http://127.0.0.1:3005/find_games/json/1")
-    # r.body #=> "[1,2,3]"
-    # JSON.parse( r.body ) #=> [1, 2, 3]
-    # 
-    # #one-liner:
-    # JSON.parse( Net::HTTP.get_response( URI.parse("http://127.0.0.1:3005/find_games/json/1")).body )
-    
-    
-    # Fire at the Destiny and receive the code to decypher
-    url = URI.parse("http://#{@destiny_url}/knock_knock/1")
-    begin
-      com = Net::HTTP.get_response( url )
-    rescue Exception => e
-      @msg = "#crawl ERROR, attempt to communicate with '#{url}' failed: '#{e.message}'"
-      logger.error @msg
-      return render :text => @msg
-    end
-    
-    # Try parsing the answer of the communication as JSON
-    begin
-      secret = JSON.parse( com.body )[0]
-    rescue Exception => e
-      @msg = "#crawl ERROR, Bad JSON response: '#{e.message}', expected a Array, with 0 containing a secret String!"
-      logger.error @msg
-      return render :text => @msg
-    end
-    
-    
-    # Respond with the decoded secret
-    decoded_response = decode( secret )
-    #decoded_response = "mock 2 fail"
-    #params_response = ({  :code => decoded_response, :url => URI.encode("http://#{@@my_url}/#{self.controller_name}") }.to_param)
-    params_response = ({  :code => decoded_response }.to_param)
-    url = URI.parse("http://#{@destiny_url}/open_the_door/1?#{ params_response }")
-    begin
-      resp = Net::HTTP.get_response( url )
-      throw 'Auth Failed' unless JSON.parse( resp.body )[0] == 'ok'
-    rescue Exception => e
-      @msg = "#crawl ERROR, attempt to communicate with '#{url}' failed: '#{e.message}'"
-      logger.error @msg
-      return render :text => @msg
-    end
-    
-    #Stream Data
-    stream
-    
-    
-    render :text => params_response + "<br/>OK!"
-    puts ">> CRAWL"
-  end
-  
   protected
   
   def load_console_list
@@ -343,23 +282,6 @@ class FindGamesController < CrawlTemplateController
     @consoles['ds'] =            'http://www.gamestop.com/browse/games/nintendo-ds?nav=28rp0,1386-177'
     @consoles['psp'] =           'http://www.gamestop.com/browse/sony-psp/games?nav=2b0,28rp0,1388-177'
     @consoles['pc'] =            'http://www.gamestop.com/browse/pc/games?nav=28rp0,138c-177'
-  end
-  
-  def stream
-    @datas = CrawlStore.all( :conditions => ["(transmited = ? or transmited is ?) and destiny = ?", false, nil, @destiny_cod] )
-    params_to_send = @datas.map do |d|
-      #{ :data => d.content }
-      d.content
-    end
-    
-    logger.info ">Sending.."+params_to_send.to_param
-    
-    
-    url = URI.parse("http://#{@destiny_url}/receive_info/1?#{ {:data => params_to_send}.to_param }")
-    Net::HTTP.get_response( url )
-    
-    #render :json => [{:name => "Martin"}, {:name => "Johana"}]
-    puts ">> STREAM"
   end
   
 end
