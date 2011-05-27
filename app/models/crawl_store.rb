@@ -3,6 +3,9 @@ class CrawlStore < ActiveRecord::Base
   # made in a way that allows a custom 'md5 id' for Object
   attr_accessor :custom_md5_id
   
+  # chose not to do so, in order to be flexible
+  # serialize :content
+  
   validates_presence_of :content
   validates_uniqueness_of :md5
   

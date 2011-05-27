@@ -7,7 +7,7 @@ class FindGamesController < CrawlTemplateController
     @base_url = "localhost" 
     @port = 3001            # must be other server! Running on the same one will block
     @url_path = '/receiver_example'
-    @sleep = 0.8
+    @time_between_transmissions = 0.51 #0.51
   end
   
   def puts msg

@@ -28,7 +28,7 @@ class CrawlTemplateController < ApplicationController
     # #one-liner:
     # JSON.parse( Net::HTTP.get_response( URI.parse("http://127.0.0.1:3005/find_games/json/1")).body )
     
-    
+    data_sent_count = 0
     
     ## STEP 1 : GET wave hello, get a code to decode!
     url = URI.parse("http://#{@base_url+(":#{@port||80}")+@url_path}/knock_knock/1")
@@ -66,106 +66,91 @@ class CrawlTemplateController < ApplicationController
     end
     
     
-    
+    transmissions_count = 0
+    fail_flag = false
     ## STEP 3 : POSTs stream data in batches (many times as needed)
     Net::HTTP.start( @base_url, @port || 80 ) { |http|
       
-      ## info1 http://stackoverflow.com/questions/941594/understand-rails-authenticity-token
-      ## ex1 http://www.ruby-doc.org/stdlib/libdoc/net/http/rdoc/classes/Net/HTTP.html#M001378
-      ## ex2 https://github.com/bensonk/fluttrly
-      
-      #req = Net::HTTP::Get.new(@url_path+'/')
-      #response = Net::HTTP.start(@base_url, @port) { |http| http.request(req) }
-      
-      ## Parse out the auth token and get the session cookie
-      #auth_token = JSON.parse( response.body )[1]
-      #cookie = response['set-cookie'].split("; ")[0] #?
-      #raise "No auth token" if auth_token.nil?
-      
-      ## Setup the params for POST
-      post_param = {
-        'oi' => "omg.. here we are!!!",
-        "authenticity_token" => @auth_token
-      }
-      
-      ## Create a POST request
-      req = Net::HTTP::Post.new(@url_path+'/test_post/1')
-      
-      ## Setup parameters
-      req.add_field("Cookie", @cookie)
-      req.set_form_data(post_param)
-      
       ## POST!
-      response = Net::HTTP.start(@base_url, @port) { |http| http.request(req) }
+      # see thanks.txt for insights
       
+      response = Net::HTTP.start(@base_url, @port){ |http|
+        stream do |data|
+          
+          # the actual data push!
+          resp = http.request( factory_request(data) )
+          
+          #response analysis
+          if (JSON.parse( resp.body )[0] rescue false)
+            transmissions_count += 1
+            data_sent_count += data.size
+          else
+            fail_flag = true
+            logger.info ">> transmit() got an error! #{resp.body}"
+            break
+          end
+          
+          
+          logger.info ">> data sent #{data.size} "
+          
+          sleep( @time_between_transmissions || 0.1 ) # this param can make this operation real long..
+        end
+      }
       
     }
     
-    render :text => "the end"
+    render :text => "the end! sent [#{data_sent_count}] records under [#{transmissions_count}] POSTs. Failed at any point? [#{fail_flag}]. See log for details"
     
-    
-=begin    
-    
-    # Fire at the Destiny and receive the code to decypher
-    url = URI.parse("http://#{@destiny_url}/knock_knock/1")
-    begin
-      com = Net::HTTP.get_response( url )
-    rescue Exception => e
-      @msg = "#crawl ERROR, attempt to communicate with '#{url}' failed: '#{e.message}'"
-      logger.error @msg
-      return render :text => @msg
-    end
-    
-    # Try parsing the answer of the communication as JSON
-    begin
-      secret = JSON.parse( com.body )[0]
-    rescue Exception => e
-      @msg = "#crawl ERROR, Bad JSON response: '#{e.message}', expected a Array, with 0 containing a secret String!"
-      logger.error @msg
-      return render :text => @msg
-    end
-    
-    
-    # Respond with the decoded secret
-    decoded_response = decode( secret )
-    #decoded_response = "mock 2 fail"
-    #params_response = ({  :code => decoded_response, :url => URI.encode("http://#{@@my_url}/#{self.controller_name}") }.to_param)
-    params_response = ({  :code => decoded_response }.to_param)
-    url = URI.parse("http://#{@destiny_url}/open_the_door/1?#{ params_response }")
-    begin
-      resp = Net::HTTP.get_response( url )
-      throw 'Auth Failed' unless JSON.parse( resp.body )[0] == 'ok'
-    rescue Exception => e
-      @msg = "#crawl ERROR, attempt to communicate with '#{url}' failed: '#{e.message}'"
-      logger.error @msg
-      return render :text => @msg
-    end
-    
-    #Stream Data
-    stream
-    
-    
-    render :text => params_response + "<br/>OK!"
-    puts ">> CRAWL"
-=end
   end
   
   
-  def stream
-    @datas = CrawlStore.find_each( :batch_size => 100, :conditions => ["(transmited = ? or transmited is ?) and destiny = ?", false, nil, @destiny_cod] )
-    params_to_send = @datas.map do |d|
-      #{ :data => d.content }
-      d.content
+  
+  
+  
+  
+  
+  
+  
+  
+  protected
+  
+  def stream &block
+    CrawlStore.find_in_batches( :batch_size => 100, :conditions => ["destiny = ? and(transmited = ? or transmited is ?)", @destiny_cod, false, nil,] ) do |regs|
+      ids = []
+      data_to_send = regs.map do |d|
+        ids.push d.id
+        d.content
+      end
+      
+      yield data_to_send
+      
+      # if transmission suceeded, mass mark as sent! #http://apidock.com/rails/ActiveRecord/Base/update_all/class
+      CrawlStore.update_all({:transmited => true}, {:id => ids})
     end
     
-    logger.info ">Sending.."+params_to_send.to_param
+  end
+  
+  
+  
+  def factory_request( data_arr )
+    
+    ## Setup the params for POST
+    post_param = {
+      "authenticity_token" => @auth_token
+    }
+    data_arr.each_with_index do |reg,i|
+      post_param["data[#{i}]"] = reg
+    end
     
     
-    url = URI.parse("http://#{@destiny_url}/receive_info/1?#{ {:data => params_to_send}.to_param }")
-    Net::HTTP.get_response( url )
+    ## Create a POST request
+    req = Net::HTTP::Post.new( @url_path+'/receive_info/1' )
     
-    #render :json => [{:name => "Martin"}, {:name => "Johana"}]
-    puts ">> STREAM"
+    ## Setup parameters
+    req.add_field("Cookie", @cookie)
+    req.set_form_data(post_param)
+    
+    return req
   end
   
   

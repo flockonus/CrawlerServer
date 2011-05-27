@@ -33,13 +33,24 @@ class ReceiverExampleController < ApplicationController
   end
   
   def receive_info
+    raise("BAD HTTP VERB, EXPECTED POST") unless request.post?
+    
     logger.info "> receiving info from #{ request.remote_ip }"
     
     # If this is the Authed IP (weakspot)
     if request.remote_ip == Rails.cache.read( 'crawl_ack_ip' ).to_s
-      new_data = false
       
-      # TODO do something specific for each of the params and persist
+      # order the incoming data
+      pure_content_arr = []
+      params[:data].each do |k,v|
+        pure_content_arr[k.to_i] = v 
+      end
+      logger.info { ">> recieving DATA! #{params[:data].size}" }
+      
+      
+      pure_content_arr.each do |content|
+        # TODO !IMPORTANT do something specific for each of the params and persist
+      end
       
       
       render :json => ['ok']
@@ -47,9 +58,9 @@ class ReceiverExampleController < ApplicationController
       throw "fail"
     end
     
-    logger.info ">>>RECEIVE_INFO"
   end
   
+  ## TEST!
   def test_post
     if request.post?
       render :json => ['ok']

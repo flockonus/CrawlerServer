@@ -1,0 +1,10 @@
+== COLABORATION
+
+lie
+
+== INFO
+
+http://stackoverflow.com/questions/941594/understand-rails-authenticity-token
+
+http://www.ruby-doc.org/stdlib/libdoc/net/http/rdoc/classes/Net/HTTP.html#M001378
+https://github.com/bensonk/fluttrly
