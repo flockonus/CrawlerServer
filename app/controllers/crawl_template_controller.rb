@@ -1,6 +1,8 @@
 class CrawlTemplateController < ApplicationController
+  
   # This gotta be set as the public url accessible
-  @@my_url = "127.0.0.1:3000"
+  # not anymore.. I guess crawler wont have a public interface anymore
+  #@@my_url = "127.0.0.1:3000"
   
   after_filter :required_stuff
   

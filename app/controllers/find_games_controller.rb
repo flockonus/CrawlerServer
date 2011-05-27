@@ -288,20 +288,6 @@ class FindGamesController < CrawlTemplateController
     # #one-liner:
     # JSON.parse( Net::HTTP.get_response( URI.parse("http://127.0.0.1:3005/find_games/json/1")).body )
     
-=begin    do
-      new_record = false
-      fetch = URL.request Net::HTTP.get_response URI.parse("place to crawl")
-      fetch.div.each do |d|
-        info = d.crawled_fields_to_yaml
-        unless CrawlStore.find(@destiny_cod, info)
-          CrawlStore.add(@destiny, info)
-          new_record = true
-        end
-        
-      end
-    while(new_record)
-=end
-    
     
     # Fire at the Destiny and receive the code to decypher
     url = URI.parse("http://#{@destiny_url}/knock_knock/1")
