@@ -2,10 +2,10 @@ class FindGamesController < CrawlTemplateController
 
   before_filter :define_instance_variables
   def define_instance_variables
-    @salt = "Gwen1aTere22a@1" # this MUST be different for each destiny!
+    @salt = "Gwen1aTere22a@1" # this must be different for each destiny!
     @destiny_cod = "find_games"
-    @base_url = "localhost" 
-    @port = 3001            # must be other server! Running on the same one will block
+    @base_url = "0.0.0.0" 
+    @port = 3000            # must be other server! Running on the same one will block
     @url_path = '/receiver_example'
     @time_between_transmissions = 0.51 #0.51
   end

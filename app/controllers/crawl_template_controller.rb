@@ -1,20 +1,12 @@
 class CrawlTemplateController < ApplicationController
   
-  # This gotta be set as the public url accessible
-  # not anymore.. I guess crawler wont have a public interface anymore
-  #@@my_url = "127.0.0.1:3000"
-  
+  ## Warning
+  # make sure to define all required stuff in the child controller!
   after_filter :required_stuff
   
   def index
     @crawl_stores = CrawlStore.all( :conditions => { :destiny => @destiny_cod }, :order => "created_at DESC" )
     render 'crawl_template/index'
-  end
-  
-  def crawl
-    #"Do the hoppy dope : YQL / Crawl"
-    #"Parse that tasty JSON!"
-    #"wave hello at destiny"
   end
   
   def show
@@ -25,8 +17,6 @@ class CrawlTemplateController < ApplicationController
   
   
   def transmit
-    # #one-liner:
-    # JSON.parse( Net::HTTP.get_response( URI.parse("http://127.0.0.1:3005/find_games/json/1")).body )
     
     data_sent_count = 0
     
